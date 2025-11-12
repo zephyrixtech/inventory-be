@@ -96,14 +96,35 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
+console.log(req.body, "body")
 
   const user = await User.findOne({ email }).populate('role');
 
-  if (!user || !user.isActive || user.status !== 'active') {
+  if (!user || !user.isActive) {
     throw ApiError.unauthorized('Invalid email or password');
   }
 
+  // Check if user is locked and unlock if credentials are correct
   const isPasswordMatch = await bcrypt.compare(password, user.passwordHash);
+  
+  if (user.status === 'locked' && isPasswordMatch) {
+    // Unlock the account if password is correct
+    user.status = 'active';
+    user.failedAttempts = 0;
+    await user.save();
+  }
+
+  if (!user || !user.isActive || (user.status !== 'active' && !(user.status === 'locked' && isPasswordMatch))) {
+    // Only increment failed attempts if user is not already locked
+    if (user.status !== 'locked') {
+      user.failedAttempts += 1;
+      if (user.failedAttempts >= 5) {
+        user.status = 'locked';
+      }
+      await user.save();
+    }
+    throw ApiError.unauthorized('Invalid email or password');
+  }
 
   if (!isPasswordMatch) {
     user.failedAttempts += 1;

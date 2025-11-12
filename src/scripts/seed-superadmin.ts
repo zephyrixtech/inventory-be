@@ -9,7 +9,7 @@ import { Role } from '../models/role.model';
 import { User } from '../models/user.model';
 
 const SUPERADMIN_EMAIL = 'superadmin@gmail.com';
-const SUPERADMIN_PASSWORD = 'superadmin';
+const SUPERADMIN_PASSWORD = 'superadmin123';
 const SUPERADMIN_COMPANY_CODE = 'DEV-HUB';
 
 const seed = async () => {

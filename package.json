@@ -10,7 +10,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
-    "seed:superadmin": "ts-node-dev --transpile-only src/scripts/seed-superadmin.ts"
+    "seed:superadmin": "ts-node-dev --transpile-only src/scripts/seed-superadmin.ts",
+    "unlock-user": "ts-node-dev --transpile-only src/scripts/unlock-user.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
