@@ -139,13 +139,21 @@ console.log(req.body, "body")
   user.lastLoginAt = new Date();
   await user.save();
 
-  const role = user.role as unknown as { _id: typeof user.role; permissions?: string[]; name?: string };
+  // Process role information correctly
+  let roleInfo = 'biller'; // default fallback
+  if (typeof user.role === 'string') {
+    // If role is a string (enum value), use it directly
+    roleInfo = user.role;
+  } else if (user.role && typeof user.role === 'object') {
+    // If role is populated as an object, extract the name
+    roleInfo = (user.role as any).name || 'biller';
+  }
 
   const payload = buildTokenPayload({
     userId: user._id,
     companyId: user.company,
-    roleId: (role as any)._id ?? user.role,
-    permissions: role.permissions
+    roleId: typeof user.role === 'string' ? user.role : (user.role as any)._id ?? user.role,
+    permissions: (user.role as any)?.permissions
   });
 
   const accessToken = generateAccessToken(payload);
@@ -167,8 +175,8 @@ console.log(req.body, "body")
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      role: role?.name ?? 'User',
-      permissions: role?.permissions ?? [],
+      role: roleInfo, // Use the processed role name
+      permissions: (user.role as any)?.permissions ?? [],
       companyId: user.company.toString(),
       company: company
         ? {
@@ -205,13 +213,21 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
       throw ApiError.unauthorized('User not found');
     }
 
-    const role = user.role as unknown as { _id: typeof user.role; permissions?: string[] };
+    // Process role information correctly
+    let roleInfo = 'biller'; // default fallback
+    if (typeof user.role === 'string') {
+      // If role is a string (enum value), use it directly
+      roleInfo = user.role;
+    } else if (user.role && typeof user.role === 'object') {
+      // If role is populated as an object, extract the name
+      roleInfo = (user.role as any).name || 'biller';
+    }
 
     const newPayload = buildTokenPayload({
       userId: user._id,
       companyId: user.company,
-      roleId: (role as any)._id ?? user.role,
-      permissions: role.permissions
+      roleId: typeof user.role === 'string' ? user.role : (user.role as any)._id ?? user.role,
+      permissions: (user.role as any)?.permissions
     });
 
     const accessToken = generateAccessToken(newPayload);
@@ -254,12 +270,23 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.notFound('User not found');
   }
 
+  // Process role information correctly
+  let roleInfo = 'biller'; // default fallback
+  if (typeof user.role === 'string') {
+    // If role is a string (enum value), use it directly
+    roleInfo = user.role;
+  } else if (user.role && typeof user.role === 'object') {
+    // If role is populated as an object, extract the name
+    roleInfo = (user.role as any).name || 'biller';
+  }
+
   return respond(res, StatusCodes.OK, {
     id: user._id,
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
-    role: user.role,
+    role: roleInfo, // Send the processed role name
+    companyId: user.company._id,
     company: user.company,
     permissions: (user.role as any)?.permissions ?? []
   });
