@@ -73,7 +73,34 @@ export const createSupplier = asyncHandler(async (req: Request, res: Response) =
     throw ApiError.badRequest('Company context missing');
   }
 
-  const { supplierId, name, email, phone, contactPerson, status, address, creditReport } = req.body;
+  const { 
+    supplierId, 
+    name, 
+    email, 
+    phone, 
+    contactPerson, 
+    status, 
+    address, 
+    creditReport,
+    registrationNumber,
+    taxId,
+    website,
+    city,
+    state,
+    postalCode,
+    country,
+    bankName,
+    bank_account_number,
+    ifscCode,
+    ibanCode,
+    creditLimit,
+    paymentTerms,
+    description,
+    rating,
+    notes,
+    selectedBrands,
+    selectedSupplies
+  } = req.body;
 
   const existing = await Supplier.findOne({ company: companyId, supplierId });
   if (existing) {
@@ -90,6 +117,24 @@ export const createSupplier = asyncHandler(async (req: Request, res: Response) =
     status,
     address,
     creditReport,
+    registrationNumber,
+    taxId,
+    website,
+    city,
+    state,
+    postalCode,
+    country,
+    bankName,
+    bank_account_number,
+    ifscCode,
+    ibanCode,
+    creditLimit,
+    paymentTerms,
+    description,
+    rating,
+    notes,
+    selectedBrands,
+    selectedSupplies,
     createdBy: req.user?.id
   });
 
@@ -108,16 +153,61 @@ export const updateSupplier = asyncHandler(async (req: Request, res: Response) =
     throw ApiError.notFound('Supplier not found');
   }
 
-  const { name, email, phone, contactPerson, status, address, creditReport, isActive } = req.body;
+  const { 
+    name, 
+    email, 
+    phone, 
+    contactPerson, 
+    status, 
+    address, 
+    creditReport, 
+    isActive,
+    registrationNumber,
+    taxId,
+    website,
+    city,
+    state,
+    postalCode,
+    country,
+    bankName,
+    bank_account_number,
+    ifscCode,
+    ibanCode,
+    creditLimit,
+    paymentTerms,
+    description,
+    rating,
+    notes,
+    selectedBrands,
+    selectedSupplies
+  } = req.body;
 
-  if (name) supplier.name = name;
-  if (email) supplier.email = email;
-  if (phone) supplier.phone = phone;
-  if (contactPerson) supplier.contactPerson = contactPerson;
-  if (status) supplier.status = status;
+  if (name !== undefined) supplier.name = name;
+  if (email !== undefined) supplier.email = email;
+  if (phone !== undefined) supplier.phone = phone;
+  if (contactPerson !== undefined) supplier.contactPerson = contactPerson;
+  if (status !== undefined) supplier.status = status;
   if (typeof isActive === 'boolean') supplier.isActive = isActive;
-  if (address) supplier.address = address;
-  if (creditReport) supplier.creditReport = creditReport;
+  if (address !== undefined) supplier.address = address;
+  if (creditReport !== undefined) supplier.creditReport = creditReport;
+  if (registrationNumber !== undefined) supplier.registrationNumber = registrationNumber;
+  if (taxId !== undefined) supplier.taxId = taxId;
+  if (website !== undefined) supplier.website = website;
+  if (city !== undefined) supplier.city = city;
+  if (state !== undefined) supplier.state = state;
+  if (postalCode !== undefined) supplier.postalCode = postalCode;
+  if (country !== undefined) supplier.country = country;
+  if (bankName !== undefined) supplier.bankName = bankName;
+  if (bank_account_number !== undefined) supplier.bank_account_number = bank_account_number;
+  if (ifscCode !== undefined) supplier.ifscCode = ifscCode;
+  if (ibanCode !== undefined) supplier.ibanCode = ibanCode;
+  if (creditLimit !== undefined) supplier.creditLimit = creditLimit;
+  if (paymentTerms !== undefined) supplier.paymentTerms = paymentTerms;
+  if (description !== undefined) supplier.description = description;
+  if (rating !== undefined) supplier.rating = rating;
+  if (notes !== undefined) supplier.notes = notes;
+  if (selectedBrands !== undefined) supplier.selectedBrands = selectedBrands;
+  if (selectedSupplies !== undefined) supplier.selectedSupplies = selectedSupplies;
 
   await supplier.save();
 
@@ -142,4 +232,3 @@ export const deleteSupplier = asyncHandler(async (req: Request, res: Response) =
 
   return respond(res, StatusCodes.OK, { success: true }, { message: 'Supplier deactivated successfully' });
 });
-
