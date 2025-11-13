@@ -7,7 +7,7 @@ export interface UserDocument extends Document<Types.ObjectId> {
   email: string;
   passwordHash: string;
   phone?: string;
-  role: Types.ObjectId;
+  role: 'superadmin' | 'admin' | 'purchaser' | 'biller';
   status: 'active' | 'inactive' | 'locked';
   isActive: boolean;
   failedAttempts: number;
@@ -25,7 +25,7 @@ const userSchema = new Schema<UserDocument>(
     email: { type: String, trim: true, lowercase: true, required: true, unique: true },
     passwordHash: { type: String, required: true },
     phone: { type: String, trim: true },
-    role: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
+    role: { type: String, enum: ['superadmin', 'admin', 'purchaser', 'biller'], required: true },
     status: { type: String, enum: ['active', 'inactive', 'locked'], default: 'active' },
     isActive: { type: Boolean, default: true },
     failedAttempts: { type: Number, default: 0 },

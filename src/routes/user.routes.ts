@@ -21,7 +21,10 @@ router.post(
     body('lastName').notEmpty(),
     body('email').isEmail(),
     body('password').isLength({ min: 8 }),
-    body('roleId').isMongoId()
+    body('role')
+      .isString()
+      .trim()
+      .isIn(['superadmin', 'admin', 'purchaser', 'biller'])
   ],
   validateRequest,
   createUser
@@ -30,7 +33,15 @@ router.post(
 router.put(
   '/:id',
   authorize(['manage_users']),
-  [param('id').isMongoId(), body('roleId').optional().isMongoId()],
+  [
+    param('id').isMongoId(),
+    body('email').optional().isEmail(),
+    body('role')
+      .optional()
+      .isString()
+      .trim()
+      .isIn(['superadmin', 'admin', 'purchaser', 'biller'])
+  ],
   validateRequest,
   updateUser
 );

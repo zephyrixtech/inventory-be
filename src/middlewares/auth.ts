@@ -7,6 +7,13 @@ import { asyncHandler } from '../utils/async-handler';
 import { logger } from '../utils/logger';
 import { verifyAccessToken } from '../services/token.service';
 
+const ROLE_PERMISSION_FALLBACK: Record<string, string[]> = {
+  superadmin: ['*'],
+  admin: ['manage_users'],
+  purchaser: [],
+  biller: []
+};
+
 const parseAuthHeader = (authorization?: string): string | null => {
   if (!authorization) {
     return null;
@@ -36,12 +43,31 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
       throw ApiError.unauthorized('User is not active');
     }
 
-    const role = user.role as unknown as { _id: Types.ObjectId; permissions?: string[] };
+    const populatedRole = user.role as unknown as { _id?: Types.ObjectId; permissions?: string[]; name?: string };
+
+    let resolvedRoleId: string;
+    if (typeof user.role === 'string' && user.role.length > 0) {
+      resolvedRoleId = user.role;
+    } else if (populatedRole?._id) {
+      resolvedRoleId = populatedRole._id.toString();
+    } else if (typeof payload.role === 'string') {
+      resolvedRoleId = payload.role;
+    } else {
+      resolvedRoleId = '';
+    }
+
+    const resolvedPermissions =
+      populatedRole?.permissions ??
+      payload.permissions ??
+      (typeof user.role === 'string' ? ROLE_PERMISSION_FALLBACK[user.role] : undefined) ??
+      (populatedRole?.name ? ROLE_PERMISSION_FALLBACK[populatedRole.name] : []) ??
+      [];
+
     req.user = {
       id: user._id.toString(),
       company: user.company.toString(),
-      role: role._id.toString(),
-      permissions: role.permissions ?? payload.permissions
+      role: resolvedRoleId,
+      permissions: resolvedPermissions
     };
     req.companyId = user.company;
 
