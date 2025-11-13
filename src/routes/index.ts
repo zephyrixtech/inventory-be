@@ -6,6 +6,7 @@ import roleRoutes from './role.routes';
 import supplierRoutes from './supplier.routes';
 import categoryRoutes from './category.routes';
 import itemRoutes from './item.routes';
+import itemConfiguratorRoutes from './item-configurator.routes';
 import storeRoutes from './store.routes';
 import customerRoutes from './customer.routes';
 import inventoryRoutes from './inventory.routes';
@@ -28,6 +29,7 @@ apiRouter.use('/roles', roleRoutes);
 apiRouter.use('/suppliers', supplierRoutes);
 apiRouter.use('/categories', categoryRoutes);
 apiRouter.use('/items', itemRoutes);
+apiRouter.use('/item-configurations', itemConfiguratorRoutes);
 apiRouter.use('/stores', storeRoutes);
 apiRouter.use('/customers', customerRoutes);
 apiRouter.use('/inventory', inventoryRoutes);
@@ -43,4 +45,3 @@ apiRouter.use('/currency', currencyRoutes);
 apiRouter.use('/reports', reportRoutes);
 
 export default apiRouter;
-
