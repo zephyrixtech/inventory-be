@@ -15,7 +15,12 @@ router.get('/:id', [param('id').isMongoId()], validateRequest, getSupplier);
 
 router.post(
   '/',
-  [body('supplierId').notEmpty(), body('name').notEmpty(), body('status').isIn(['Active', 'Pending', 'Inactive'])],
+  [
+    body('supplierId').notEmpty(),
+    body('name').notEmpty(),
+    body('status').isIn(['pending', 'approved', 'rejected']),
+    // Optional fields can be validated here if needed
+  ],
   validateRequest,
   createSupplier
 );
@@ -25,4 +30,3 @@ router.put('/:id', [param('id').isMongoId()], validateRequest, updateSupplier);
 router.delete('/:id', [param('id').isMongoId()], validateRequest, deleteSupplier);
 
 export default router;
-
