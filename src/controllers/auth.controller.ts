@@ -139,13 +139,10 @@ console.log(req.body, "body")
   user.lastLoginAt = new Date();
   await user.save();
 
-  // Process role information correctly
-  let roleInfo = 'biller'; // default fallback
+  let roleInfo = 'biller';
   if (typeof user.role === 'string') {
-    // If role is a string (enum value), use it directly
     roleInfo = user.role;
   } else if (user.role && typeof user.role === 'object') {
-    // If role is populated as an object, extract the name
     roleInfo = (user.role as any).name || 'biller';
   }
 
@@ -175,7 +172,7 @@ console.log(req.body, "body")
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      role: roleInfo, // Use the processed role name
+      role: roleInfo, 
       permissions: (user.role as any)?.permissions ?? [],
       companyId: user.company.toString(),
       company: company
@@ -213,13 +210,10 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
       throw ApiError.unauthorized('User not found');
     }
 
-    // Process role information correctly
     let roleInfo = 'biller'; // default fallback
     if (typeof user.role === 'string') {
-      // If role is a string (enum value), use it directly
       roleInfo = user.role;
     } else if (user.role && typeof user.role === 'object') {
-      // If role is populated as an object, extract the name
       roleInfo = (user.role as any).name || 'biller';
     }
 
@@ -270,13 +264,10 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.notFound('User not found');
   }
 
-  // Process role information correctly
-  let roleInfo = 'biller'; // default fallback
+  let roleInfo = 'biller'; 
   if (typeof user.role === 'string') {
-    // If role is a string (enum value), use it directly
     roleInfo = user.role;
   } else if (user.role && typeof user.role === 'object') {
-    // If role is populated as an object, extract the name
     roleInfo = (user.role as any).name || 'biller';
   }
 
