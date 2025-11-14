@@ -20,6 +20,7 @@ import storeStockRoutes from './store-stock.routes';
 import dailyExpenseRoutes from './daily-expense.routes';
 import currencyRoutes from './currency.routes';
 import reportRoutes from './report.routes';
+import companyAdministrationRoutes from './company-administration.routes';
 
 const apiRouter = Router();
 
@@ -43,5 +44,6 @@ apiRouter.use('/store-stock', storeStockRoutes);
 apiRouter.use('/expenses', dailyExpenseRoutes);
 apiRouter.use('/currency', currencyRoutes);
 apiRouter.use('/reports', reportRoutes);
+apiRouter.use('/company-administration', companyAdministrationRoutes);
 
 export default apiRouter;
