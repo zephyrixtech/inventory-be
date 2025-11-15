@@ -1,8 +1,9 @@
 import type { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
+import { Types } from 'mongoose';
 
-import { Store } from '../models/store.model';
-import { User } from '../models/user.model';
+import { Store, type StoreDocument } from '../models/store.model';
+import { User, type UserDocument } from '../models/user.model';
 import { Inventory } from '../models/inventory.model';
 import { ApiError } from '../utils/api-error';
 import { asyncHandler } from '../utils/async-handler';
@@ -28,7 +29,7 @@ export const createStore = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.badRequest('Company context missing');
   }
 
-  const { name, code, type, parentId, managerId, phone, email, address } = req.body;
+  const { name, code, type, parentId, managerId, phone, email, address, city, state, postalCode, country, bankName, bankAccountNumber, ifscCode, ibanCode, taxCode, directPurchaseAllowed } = req.body;
 
   const existing = await Store.findOne({ company: companyId, code });
   if (existing) {
@@ -41,21 +42,21 @@ export const createStore = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Validate parent for branch stores
-  let parent = null;
+  let parent: StoreDocument | null = null;
   if (parentId) {
     parent = await Store.findOne({ _id: parentId, company: companyId, isActive: true });
     if (!parent) {
       throw ApiError.badRequest('Invalid parent store');
     }
-    if (parent.type !== 'Central Store') {
-      throw ApiError.badRequest('Parent store must be a Central Store');
-    }
+    // if (parent.type !== 'Central Store') {
+    //   throw ApiError.badRequest('Parent store must be a Central Store');
+    // }
   }
 
   // If type is Branch Store, parent is required
   const storeType = type || 'Branch Store';
   if (storeType === 'Branch Store' && !parentId) {
-    throw ApiError.badRequest('Branch Store must have a parent Central Store');
+    throw ApiError.badRequest('Branch Store must have a parent store');
   }
 
   // If type is Central Store, parent should be null
@@ -63,7 +64,7 @@ export const createStore = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.badRequest('Central Store cannot have a parent');
   }
 
-  let manager = null;
+  let manager: UserDocument | null = null;
   if (managerId) {
     manager = await User.findOne({ _id: managerId, company: companyId });
     if (!manager) {
@@ -76,11 +77,21 @@ export const createStore = asyncHandler(async (req: Request, res: Response) => {
     name,
     code,
     type: storeType,
-    parent: parent?._id,
-    manager: manager?._id,
+    parent: parent ? parent._id : undefined,
+    manager: manager ? manager._id : undefined,
     phone,
     email,
-    address
+    address,
+    city,
+    state,
+    postalCode,
+    country,
+    bankName,
+    bankAccountNumber,
+    ifscCode,
+    ibanCode,
+    taxCode,
+    directPurchaseAllowed
   });
 
   const populatedStore = await Store.findById(store._id)
@@ -102,12 +113,22 @@ export const updateStore = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.notFound('Store not found');
   }
 
-  const { name, type, parentId, managerId, phone, email, address, isActive } = req.body;
+  const { name, type, parentId, managerId, phone, email, address, city, state, postalCode, country, bankName, bankAccountNumber, ifscCode, ibanCode, taxCode, directPurchaseAllowed, isActive } = req.body;
 
   if (name) store.name = name;
   if (phone !== undefined) store.phone = phone;
   if (email !== undefined) store.email = email;
   if (address !== undefined) store.address = address;
+  if (city !== undefined) store.city = city;
+  if (state !== undefined) store.state = state;
+  if (postalCode !== undefined) store.postalCode = postalCode;
+  if (country !== undefined) store.country = country;
+  if (bankName !== undefined) store.bankName = bankName;
+  if (bankAccountNumber !== undefined) store.bankAccountNumber = bankAccountNumber;
+  if (ifscCode !== undefined) store.ifscCode = ifscCode;
+  if (ibanCode !== undefined) store.ibanCode = ibanCode;
+  if (taxCode !== undefined) store.taxCode = taxCode;
+  if (typeof directPurchaseAllowed === 'boolean') store.directPurchaseAllowed = directPurchaseAllowed;
   if (typeof isActive === 'boolean') store.isActive = isActive;
 
   // Handle type change
@@ -135,9 +156,9 @@ export const updateStore = asyncHandler(async (req: Request, res: Response) => {
       if (!parent) {
         throw ApiError.badRequest('Invalid parent store');
       }
-      if (parent.type !== 'Central Store') {
-        throw ApiError.badRequest('Parent store must be a Central Store');
-      }
+      // if (parent.type !== 'Central Store') {
+      //   throw ApiError.badRequest('Parent store must be a Central Store');
+      // }
       if (parent._id.toString() === store._id.toString()) {
         throw ApiError.badRequest('Store cannot be its own parent');
       }
@@ -164,6 +185,23 @@ export const updateStore = asyncHandler(async (req: Request, res: Response) => {
     .populate('parent', 'name code type');
 
   return respond(res, StatusCodes.OK, updatedStore, { message: 'Store updated successfully' });
+});
+
+export const getStore = asyncHandler(async (req: Request, res: Response) => {
+  const companyId = req.companyId;
+  if (!companyId) {
+    throw ApiError.badRequest('Company context missing');
+  }
+
+  const store = await Store.findOne({ _id: req.params.id, company: companyId, isActive: true })
+    .populate('manager', 'firstName lastName email')
+    .populate('parent', 'name code type');
+
+  if (!store) {
+    throw ApiError.notFound('Store not found');
+  }
+
+  return respond(res, StatusCodes.OK, store);
 });
 
 export const deleteStore = asyncHandler(async (req: Request, res: Response) => {

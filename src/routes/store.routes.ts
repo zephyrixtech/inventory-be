@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, param } from 'express-validator';
 
-import { listStores, createStore, updateStore, deleteStore } from '../controllers/store.controller';
+import { listStores, getStore, createStore, updateStore, deleteStore } from '../controllers/store.controller';
 import { authenticate, authorize } from '../middlewares/auth';
 import { validateRequest } from '../middlewares/validate-request';
 
@@ -10,6 +10,7 @@ const router = Router();
 router.use(authenticate, authorize(['manage_stores']));
 
 router.get('/', listStores);
+router.get('/:id', [param('id').isMongoId()], validateRequest, getStore);
 
 router.post(
   '/',

@@ -10,6 +10,20 @@ export interface StoreDocument extends Document<Types.ObjectId> {
   phone?: string;
   email?: string;
   address?: string;
+  // Detailed address fields
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  // Financial information fields
+  bankName?: string;
+  bankAccountNumber?: string;
+  ifscCode?: string;
+  ibanCode?: string;
+  // Tax information
+  taxCode?: string;
+  // Additional configuration
+  directPurchaseAllowed?: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +40,20 @@ const storeSchema = new Schema<StoreDocument>(
     phone: { type: String, trim: true },
     email: { type: String, trim: true, lowercase: true },
     address: { type: String, trim: true },
+    // Detailed address fields
+    city: { type: String, trim: true },
+    state: { type: String, trim: true },
+    postalCode: { type: String, trim: true },
+    country: { type: String, trim: true },
+    // Financial information fields
+    bankName: { type: String, trim: true },
+    bankAccountNumber: { type: String, trim: true },
+    ifscCode: { type: String, trim: true },
+    ibanCode: { type: String, trim: true },
+    // Tax information
+    taxCode: { type: String, trim: true },
+    // Additional configuration
+    directPurchaseAllowed: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true }
   },
   {
@@ -38,4 +66,3 @@ storeSchema.index({ company: 1, name: 1 });
 storeSchema.index({ company: 1, parent: 1 });
 
 export const Store = model<StoreDocument>('Store', storeSchema);
-
