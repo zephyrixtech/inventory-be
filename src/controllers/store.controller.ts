@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 
 import { Store } from '../models/store.model';
 import { User } from '../models/user.model';
+import { Inventory } from '../models/inventory.model';
 import { ApiError } from '../utils/api-error';
 import { asyncHandler } from '../utils/async-handler';
 import { respond } from '../utils/api-response';
@@ -15,6 +16,7 @@ export const listStores = asyncHandler(async (req: Request, res: Response) => {
 
   const stores = await Store.find({ company: companyId, isActive: true })
     .populate('manager', 'firstName lastName email')
+    .populate('parent', 'name code type')
     .sort({ name: 1 });
 
   return respond(res, StatusCodes.OK, stores);
@@ -26,11 +28,39 @@ export const createStore = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.badRequest('Company context missing');
   }
 
-  const { name, code, managerId, phone, email, address } = req.body;
+  const { name, code, type, parentId, managerId, phone, email, address } = req.body;
 
   const existing = await Store.findOne({ company: companyId, code });
   if (existing) {
     throw ApiError.conflict('Store with this code already exists');
+  }
+
+  // Validate type
+  if (type && !['Central Store', 'Branch Store'].includes(type)) {
+    throw ApiError.badRequest('Invalid store type. Must be "Central Store" or "Branch Store"');
+  }
+
+  // Validate parent for branch stores
+  let parent = null;
+  if (parentId) {
+    parent = await Store.findOne({ _id: parentId, company: companyId, isActive: true });
+    if (!parent) {
+      throw ApiError.badRequest('Invalid parent store');
+    }
+    if (parent.type !== 'Central Store') {
+      throw ApiError.badRequest('Parent store must be a Central Store');
+    }
+  }
+
+  // If type is Branch Store, parent is required
+  const storeType = type || 'Branch Store';
+  if (storeType === 'Branch Store' && !parentId) {
+    throw ApiError.badRequest('Branch Store must have a parent Central Store');
+  }
+
+  // If type is Central Store, parent should be null
+  if (storeType === 'Central Store' && parentId) {
+    throw ApiError.badRequest('Central Store cannot have a parent');
   }
 
   let manager = null;
@@ -45,13 +75,19 @@ export const createStore = asyncHandler(async (req: Request, res: Response) => {
     company: companyId,
     name,
     code,
+    type: storeType,
+    parent: parent?._id,
     manager: manager?._id,
     phone,
     email,
     address
   });
 
-  return respond(res, StatusCodes.CREATED, store, { message: 'Store created successfully' });
+  const populatedStore = await Store.findById(store._id)
+    .populate('manager', 'firstName lastName email')
+    .populate('parent', 'name code type');
+
+  return respond(res, StatusCodes.CREATED, populatedStore, { message: 'Store created successfully' });
 });
 
 export const updateStore = asyncHandler(async (req: Request, res: Response) => {
@@ -66,25 +102,68 @@ export const updateStore = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.notFound('Store not found');
   }
 
-  const { name, managerId, phone, email, address, isActive } = req.body;
+  const { name, type, parentId, managerId, phone, email, address, isActive } = req.body;
 
   if (name) store.name = name;
-  if (phone) store.phone = phone;
-  if (email) store.email = email;
-  if (address) store.address = address;
+  if (phone !== undefined) store.phone = phone;
+  if (email !== undefined) store.email = email;
+  if (address !== undefined) store.address = address;
   if (typeof isActive === 'boolean') store.isActive = isActive;
 
-  if (managerId) {
-    const manager = await User.findOne({ _id: managerId, company: companyId });
-    if (!manager) {
-      throw ApiError.badRequest('Invalid store manager');
+  // Handle type change
+  if (type && ['Central Store', 'Branch Store'].includes(type)) {
+    // If changing to Central Store, remove parent
+    if (type === 'Central Store') {
+      store.parent = undefined;
     }
-    store.manager = manager._id;
+    // If changing to Branch Store, validate parent
+    else if (type === 'Branch Store' && !parentId && !store.parent) {
+      throw ApiError.badRequest('Branch Store must have a parent Central Store');
+    }
+    store.type = type;
+  }
+
+  // Handle parent change
+  if (parentId !== undefined) {
+    if (parentId === null || parentId === '') {
+      if (store.type === 'Branch Store') {
+        throw ApiError.badRequest('Branch Store must have a parent Central Store');
+      }
+      store.parent = undefined;
+    } else {
+      const parent = await Store.findOne({ _id: parentId, company: companyId, isActive: true });
+      if (!parent) {
+        throw ApiError.badRequest('Invalid parent store');
+      }
+      if (parent.type !== 'Central Store') {
+        throw ApiError.badRequest('Parent store must be a Central Store');
+      }
+      if (parent._id.toString() === store._id.toString()) {
+        throw ApiError.badRequest('Store cannot be its own parent');
+      }
+      store.parent = parent._id;
+    }
+  }
+
+  if (managerId !== undefined) {
+    if (managerId === null || managerId === '') {
+      store.manager = undefined;
+    } else {
+      const manager = await User.findOne({ _id: managerId, company: companyId });
+      if (!manager) {
+        throw ApiError.badRequest('Invalid store manager');
+      }
+      store.manager = manager._id;
+    }
   }
 
   await store.save();
 
-  return respond(res, StatusCodes.OK, store, { message: 'Store updated successfully' });
+  const updatedStore = await Store.findById(store._id)
+    .populate('manager', 'firstName lastName email')
+    .populate('parent', 'name code type');
+
+  return respond(res, StatusCodes.OK, updatedStore, { message: 'Store updated successfully' });
 });
 
 export const deleteStore = asyncHandler(async (req: Request, res: Response) => {
@@ -97,6 +176,18 @@ export const deleteStore = asyncHandler(async (req: Request, res: Response) => {
 
   if (!store) {
     throw ApiError.notFound('Store not found');
+  }
+
+  // Check if store has child stores (branch stores)
+  const childStores = await Store.find({ parent: store._id, company: companyId, isActive: true });
+  if (childStores.length > 0) {
+    throw ApiError.badRequest('Cannot delete store: It has connected branch stores');
+  }
+
+  // Check if store is used in inventory (which may be linked to purchase orders)
+  const inventoryCount = await Inventory.countDocuments({ store: store._id, company: companyId });
+  if (inventoryCount > 0) {
+    throw ApiError.badRequest('Cannot delete store: It is used in inventory records');
   }
 
   store.isActive = false;

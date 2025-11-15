@@ -13,12 +13,28 @@ router.get('/', listStores);
 
 router.post(
   '/',
-  [body('name').notEmpty(), body('code').notEmpty(), body('managerId').optional().isMongoId()],
+  [
+    body('name').notEmpty(),
+    body('code').notEmpty(),
+    body('type').optional().isIn(['Central Store', 'Branch Store']),
+    body('parentId').optional().isMongoId(),
+    body('managerId').optional().isMongoId()
+  ],
   validateRequest,
   createStore
 );
 
-router.put('/:id', [param('id').isMongoId(), body('managerId').optional().isMongoId()], validateRequest, updateStore);
+router.put(
+  '/:id',
+  [
+    param('id').isMongoId(),
+    body('type').optional().isIn(['Central Store', 'Branch Store']),
+    body('parentId').optional().isMongoId(),
+    body('managerId').optional().isMongoId()
+  ],
+  validateRequest,
+  updateStore
+);
 
 router.delete('/:id', [param('id').isMongoId()], validateRequest, deleteStore);
 
