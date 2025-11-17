@@ -2,6 +2,8 @@ import type { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { startOfDay, subDays, isSameDay } from 'date-fns';
 
+import { Types } from 'mongoose';
+
 import { Item } from '../models/item.model';
 import { Inventory } from '../models/inventory.model';
 import { PurchaseOrder } from '../models/purchase-order.model';
@@ -37,7 +39,10 @@ export const getDashboardMetrics = asyncHandler(async (req: Request, res: Respon
 
   const categoryData = categories.map((category, index) => {
     const stock = inventoryRecords
-      .filter((record) => record.item && record.item.category?.toString() === category._id.toString())
+      .filter((record) => {
+        const itemDoc = record.item as { category?: Types.ObjectId } | null;
+        return Boolean(itemDoc?.category && itemDoc.category.toString() === category._id.toString());
+      })
       .reduce((sum, record) => sum + record.quantity, 0);
 
     return {
@@ -47,7 +52,7 @@ export const getDashboardMetrics = asyncHandler(async (req: Request, res: Respon
     };
   });
 
-  const salesData = [];
+  const salesData: Array<{ day: string; sales: number }> = [];
   const today = startOfDay(new Date());
   for (let i = 29; i >= 0; i -= 1) {
     const dayDate = subDays(today, i);

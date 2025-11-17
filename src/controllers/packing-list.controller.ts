@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 
 import { PackingList } from '../models/packing-list.model';
@@ -9,12 +10,15 @@ import { respond } from '../utils/api-response';
 import { getPaginationParams } from '../utils/pagination';
 import { buildPaginationMeta } from '../utils/query-builder';
 
-const normalizeItems = async (companyId: NonNullable<Request['companyId']>, items: Array<{ productId: string; quantity: number }>) => {
+const normalizeItems = async (
+  companyId: NonNullable<Request['companyId']>,
+  items: Array<{ productId: string; quantity: number }>
+) => {
   if (!Array.isArray(items) || items.length === 0) {
     throw ApiError.badRequest('Packing list items are required');
   }
 
-  const normalized = [];
+  const normalized: Array<{ product: Types.ObjectId; quantity: number }> = [];
 
   for (const entry of items) {
     const product = await Item.findOne({ _id: entry.productId, company: companyId });
@@ -96,7 +100,7 @@ export const createPackingList = asyncHandler(async (req: Request, res: Response
     packingDate,
     image,
     status: 'pending',
-    createdBy: req.user.id
+    createdBy: new Types.ObjectId(req.user.id)
   });
 
   return respond(res, StatusCodes.CREATED, packingList, { message: 'Packing list created successfully' });
@@ -128,7 +132,7 @@ export const updatePackingList = asyncHandler(async (req: Request, res: Response
   if (status && ['pending', 'approved', 'shipped', 'rejected'].includes(status)) {
     packingList.status = status;
     if (['approved', 'shipped'].includes(status) && req.user) {
-      packingList.approvedBy = req.user.id;
+      packingList.approvedBy = new Types.ObjectId(req.user.id);
       packingList.approvedAt = new Date();
     }
   }

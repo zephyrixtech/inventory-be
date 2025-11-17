@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 
 import { Item } from '../models/item.model';
@@ -98,12 +99,13 @@ export const createItem = asyncHandler(async (req: Request, res: Response) => {
     throw ApiError.badRequest('Invalid category');
   }
 
-  let vendor = null;
+  let vendorObjectId: Types.ObjectId | undefined;
   if (vendorId) {
-    vendor = await Vendor.findOne({ _id: vendorId, company: companyId });
+    const vendor = await Vendor.findOne({ _id: vendorId, company: companyId });
     if (!vendor) {
       throw ApiError.badRequest('Invalid vendor');
     }
+    vendorObjectId = vendor._id;
   }
 
   const item = await Item.create({
@@ -115,7 +117,7 @@ export const createItem = asyncHandler(async (req: Request, res: Response) => {
     reorderLevel,
     maxLevel,
     unitOfMeasure,
-    vendor: vendor?._id,
+    vendor: vendorObjectId,
     unitPrice,
     currency,
     quantity,

@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 
 import { PurchaseOrder } from '../models/purchase-order.model';
@@ -11,6 +12,15 @@ import { respond } from '../utils/api-response';
 import { getPaginationParams } from '../utils/pagination';
 import { buildPaginationMeta } from '../utils/query-builder';
 
+type NormalizedPurchaseOrderItem = {
+  item: Types.ObjectId;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  receivedQuantity: number;
+};
+
 const normalizeItems = async (
   companyId: NonNullable<Request['companyId']>,
   items: Array<{ itemId: string; description?: string; quantity: number; unitPrice: number }>
@@ -19,7 +29,7 @@ const normalizeItems = async (
     throw ApiError.badRequest('At least one item is required');
   }
 
-  const normalized = [];
+  const normalized: NormalizedPurchaseOrderItem[] = [];
 
   for (const entry of items) {
     const item = await Item.findOne({ _id: entry.itemId, company: companyId });
@@ -143,7 +153,7 @@ export const createPurchaseOrder = asyncHandler(async (req: Request, res: Respon
     status,
     totalValue,
     notes,
-    issuedBy: req.user?.id,
+    issuedBy: req.user ? new Types.ObjectId(req.user.id) : undefined,
     items: normalizedItems,
     isActive: true
   });

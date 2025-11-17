@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 
 import { StoreStock } from '../models/store-stock.model';
@@ -63,7 +64,7 @@ export const upsertStoreStock = asyncHandler(async (req: Request, res: Response)
     product.status = 'store_pending';
   }
 
-  product.storeApprovedBy = req.user.id as any;
+  product.storeApprovedBy = new Types.ObjectId(req.user.id);
   product.storeApprovedAt = new Date();
   product.status = 'store_approved';
 
@@ -80,7 +81,7 @@ export const upsertStoreStock = asyncHandler(async (req: Request, res: Response)
       margin: marginPercentage,
       currency: currency ?? product.currency ?? 'INR',
       priceAfterMargin,
-      lastUpdatedBy: req.user.id
+      lastUpdatedBy: new Types.ObjectId(req.user.id)
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).populate('product', 'name code currency unitPrice quantity status');
@@ -107,7 +108,7 @@ export const adjustStockQuantity = asyncHandler(async (req: Request, res: Respon
   }
 
   stock.quantity = quantity;
-  stock.lastUpdatedBy = req.user.id;
+  stock.lastUpdatedBy = new Types.ObjectId(req.user.id);
 
   await stock.save();
 

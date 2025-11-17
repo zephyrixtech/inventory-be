@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 
 import { SalesInvoice } from '../models/sales-invoice.model';
@@ -11,6 +12,15 @@ import { respond } from '../utils/api-response';
 import { getPaginationParams } from '../utils/pagination';
 import { buildPaginationMeta } from '../utils/query-builder';
 
+type NormalizedInvoiceItem = {
+  item: Types.ObjectId;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  totalPrice: number;
+};
+
 const normalizeInvoiceItems = async (
   companyId: NonNullable<Request['companyId']>,
   items: Array<{ itemId: string; description?: string; quantity: number; unitPrice: number; discount?: number }>
@@ -19,7 +29,7 @@ const normalizeInvoiceItems = async (
     throw ApiError.badRequest('At least one invoice item is required');
   }
 
-  const normalized = [];
+  const normalized: NormalizedInvoiceItem[] = [];
 
   for (const entry of items) {
     const item = await Item.findOne({ _id: entry.itemId, company: companyId });
@@ -153,7 +163,7 @@ export const createSalesInvoice = asyncHandler(async (req: Request, res: Respons
     netAmount,
     taxAmount,
     notes,
-    createdBy: req.user?.id,
+    createdBy: req.user ? new Types.ObjectId(req.user.id) : undefined,
     items: normalizedItems
   });
 

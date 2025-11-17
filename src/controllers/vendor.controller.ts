@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 
 import { Vendor } from '../models/vendor.model';
@@ -82,7 +83,7 @@ export const createVendor = asyncHandler(async (req: Request, res: Response) => 
     email,
     address,
     creditReport,
-    createdBy: req.user.id,
+    createdBy: new Types.ObjectId(req.user.id),
     status: 'pending'
   });
 
@@ -112,7 +113,7 @@ export const updateVendor = asyncHandler(async (req: Request, res: Response) => 
   if (status && ['pending', 'approved', 'inactive'].includes(status)) {
     vendor.status = status;
     if (status === 'approved' && req.user) {
-      vendor.approvedBy = req.user.id;
+      vendor.approvedBy = new Types.ObjectId(req.user.id);
       vendor.approvedAt = new Date();
     }
   }

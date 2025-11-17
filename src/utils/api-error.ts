@@ -1,4 +1,4 @@
-import { StatusCodes, ReasonPhrases } from 'http-status-codes';
+import { StatusCodes, getReasonPhrase } from 'http-status-codes';
 
 export class ApiError extends Error {
   public readonly statusCode: number;
@@ -6,7 +6,7 @@ export class ApiError extends Error {
   public readonly details?: unknown;
 
   constructor(statusCode: number, message?: string, options?: { isOperational?: boolean; details?: unknown }) {
-    super(message || ReasonPhrases[statusCode as keyof typeof ReasonPhrases] || 'Error');
+    super(message || safeReasonPhrase(statusCode) || 'Error');
     Object.setPrototypeOf(this, new.target.prototype);
     this.statusCode = statusCode;
     this.isOperational = options?.isOperational ?? true;
@@ -34,4 +34,12 @@ export class ApiError extends Error {
     return new ApiError(StatusCodes.CONFLICT, message, { details });
   }
 }
+
+const safeReasonPhrase = (statusCode: number): string | undefined => {
+  try {
+    return getReasonPhrase(statusCode as StatusCodes);
+  } catch {
+    return undefined;
+  }
+};
 

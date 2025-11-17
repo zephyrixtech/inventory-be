@@ -34,12 +34,16 @@ const seed = async () => {
       logger.info('Created developer company for superadmin');
     }
 
-    let role = await Role.findOne({ company: company?._id, name: 'Super Admin' }).session(session);
+    if (!company) {
+      throw new Error('Failed to initialize company for super admin seeding');
+    }
+
+    let role = await Role.findOne({ company: company._id, name: 'Super Admin' }).session(session);
     if (!role) {
       role = await Role.create(
         [
           {
-            company: company?._id,
+            company: company._id,
             name: 'Super Admin',
             description: 'Developer-only role with full access',
             permissions: ['*'],
@@ -55,18 +59,22 @@ const seed = async () => {
       await role.save({ session });
     }
 
+    if (!role) {
+      throw new Error('Failed to initialize role for super admin seeding');
+    }
+
     let user = await User.findOne({ email: SUPERADMIN_EMAIL }).session(session);
     if (!user) {
       const passwordHash = await bcrypt.hash(SUPERADMIN_PASSWORD, config.password.saltRounds);
       user = await User.create(
         [
           {
-            company: company?._id,
+            company: company._id,
             firstName: 'Super',
             lastName: 'Admin',
             email: SUPERADMIN_EMAIL,
             passwordHash,
-            role: role?._id,
+            role: 'superadmin',
             status: 'active',
             isActive: true
           }
@@ -77,8 +85,8 @@ const seed = async () => {
     } else {
       user.firstName = 'Super';
       user.lastName = 'Admin';
-      user.company = company?._id;
-      user.role = role?._id ?? '';
+      user.company = company._id;
+      user.role = 'superadmin';
       user.status = 'active';
       user.isActive = true;
       await user.save({ session });
